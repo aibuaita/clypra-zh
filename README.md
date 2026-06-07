@@ -50,6 +50,8 @@ run_patch.bat
 
 第一次运行时，它会自动安装需要的小组件，然后开始汉化。
 
+如果你的 Clypra 安装在默认位置，一般会自动找到。
+
 看到窗口里没有报错，并且最后出现类似：
 
 ```text
@@ -58,11 +60,35 @@ Press any key to continue . . .
 
 就表示运行结束了。按任意键关闭窗口，然后重新打开 Clypra。
 
+## 如果 Clypra 装在 D 盘或其他位置
+
+没关系，补丁也能用。
+
+如果双击 `run_patch.bat` 后提示找不到 Clypra，请按下面做：
+
+1. 找到你电脑里的 `clypra.exe`。
+2. 右键它，选择“复制文件地址”。
+3. 回到黑色窗口里，粘贴这个地址。
+4. 按回车。
+
+地址大概长这样：
+
+```text
+D:\软件\Clypra\clypra.exe
+```
+
+也可以用更简单的方法：
+
+1. 打开 Clypra 的安装文件夹。
+2. 找到 `clypra.exe`。
+3. 用鼠标把 `clypra.exe` 拖到 `run_patch.bat` 上。
+4. 松开鼠标，补丁会自动按这个位置汉化。
+
 ## 如果打不开 bat 文件
 
 如果 Windows 弹出安全提示，可以选择“更多信息”，再点“仍要运行”。
 
-如果双击后窗口一闪而过，通常是 Python 没装好。请重新安装 Python，并确认安装时勾选了 `Add python.exe to PATH`。
+如果提示没有找到 Python，请重新安装 Python，并确认安装时勾选了 `Add python.exe to PATH`。
 
 ## 如何恢复英文原版
 

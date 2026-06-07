@@ -529,6 +529,38 @@ def make_backup(exe: Path) -> Path:
     return backup
 
 
+def normalize_exe_path(value: str | os.PathLike[str] | Path) -> Path:
+    raw = str(value).strip().strip('"').strip("'")
+    exe = Path(raw).expanduser()
+    if exe.is_dir():
+        exe = exe / "clypra.exe"
+    return exe
+
+
+def ask_for_exe_path() -> Path:
+    print("未在默认位置找到 Clypra。")
+    print("如果你把 Clypra 安装在 D 盘或其他位置，请粘贴 clypra.exe 的完整路径。")
+    print(r"示例：D:\Programs\Clypra\clypra.exe")
+    while True:
+        raw = input("请输入 clypra.exe 路径，直接回车退出：").strip()
+        if not raw:
+            raise FileNotFoundError(f"找不到 Clypra：{DEFAULT_EXE}")
+        exe = normalize_exe_path(raw)
+        if exe.exists():
+            return exe
+        print(f"这个路径不存在：{exe}")
+
+
+def resolve_exe_path(explicit_path: str | None) -> Path:
+    if explicit_path:
+        return normalize_exe_path(explicit_path)
+    if DEFAULT_EXE.exists():
+        return DEFAULT_EXE
+    if sys.stdin.isatty():
+        return ask_for_exe_path()
+    return DEFAULT_EXE
+
+
 def patch_exe(exe: Path, dry_run: bool = False, keep_process: bool = False) -> None:
     if not exe.exists():
         raise FileNotFoundError(f"找不到 Clypra：{exe}")
@@ -563,17 +595,24 @@ def patch_exe(exe: Path, dry_run: bool = False, keep_process: bool = False) -> N
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Clypra 简体中文汉化补丁器")
     parser.add_argument(
+        "exe_path",
+        nargs="?",
+        help="可选：clypra.exe 路径。也可以把 clypra.exe 直接拖到 run_patch.bat 上。",
+    )
+    parser.add_argument(
         "--exe",
-        type=Path,
-        default=DEFAULT_EXE,
+        default=None,
         help=f"clypra.exe 路径，默认：{DEFAULT_EXE}",
     )
     parser.add_argument("--dry-run", action="store_true", help="只检测和构建补丁，不写入文件")
     parser.add_argument("--keep-process", action="store_true", help="不自动结束正在运行的 clypra 进程")
     args = parser.parse_args(argv)
+    if args.exe_path and args.exe:
+        parser.error("请只使用一种路径写法：直接写路径，或者使用 --exe。")
 
     try:
-        patch_exe(args.exe, dry_run=args.dry_run, keep_process=args.keep_process)
+        exe = resolve_exe_path(args.exe_path or args.exe)
+        patch_exe(exe, dry_run=args.dry_run, keep_process=args.keep_process)
         return 0
     except Exception as exc:
         print(f"失败：{exc}", file=sys.stderr)
