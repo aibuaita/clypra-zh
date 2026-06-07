@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.bak
+*.bak-*
+*.exe
+*.dll
+*.msi
+*.dmg
+*.AppImage
+clypra_han/extracted/
+clypra_han/analysis/
