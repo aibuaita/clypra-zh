@@ -356,6 +356,8 @@ def esc(s: str, quote: str) -> str:
 def replace_string_literals(text: str, mapping: dict[str, str]) -> tuple[str, int, int]:
     hits = {}
     for old, new in sorted(mapping.items(), key=lambda item: len(item[0]), reverse=True):
+        if old == new:
+            continue
         count = 0
         for quote in ['"', "'", "`"]:
             before = f"{quote}{esc(old, quote)}{quote}"
@@ -366,7 +368,8 @@ def replace_string_literals(text: str, mapping: dict[str, str]) -> tuple[str, in
                 count += found
         if count:
             hits[old] = count
-    return text, sum(hits.values()), len(mapping) - len(hits)
+    translated_items = sum(1 for old, new in mapping.items() if old != new)
+    return text, sum(hits.values()), translated_items - len(hits)
 
 
 def read_pe_sections(exe_bytes: bytes) -> tuple[int, list[dict[str, int | str]]]:
@@ -486,6 +489,8 @@ def patch_asset(
     source = brotli.decompress(bytes(exe_bytes[name_end:name_end + old_len])).decode("utf-8")
     translated, replacement_count, missing_count = replace_string_literals(source, mapping)
     if replacement_count == 0:
+        if any("\u4e00" <= ch <= "\u9fff" for ch in source):
+            return path, replacement_count, missing_count, old_len
         raise RuntimeError(f"{path} 没有发生任何替换，可能版本不匹配。")
     packed = brotli.compress(translated.encode("utf-8"), quality=11)
     if len(packed) > old_len:
@@ -579,9 +584,18 @@ def patch_exe(exe: Path, dry_run: bool = False, keep_process: bool = False) -> N
     ]
 
     for path, replacements, missing, packed_len in results:
-        print(f"{path}: 替换 {replacements} 处，未命中翻译 {missing} 条，压缩后 {packed_len} 字节")
+        if replacements:
+            print(f"{path}: 替换 {replacements} 处，未命中翻译 {missing} 条，压缩后 {packed_len} 字节")
+        else:
+            print(f"{path}: 已经是汉化状态，无需重复替换")
     if dry_run:
         print("dry-run 模式：未写入文件。")
+        return
+
+    if not any(replacements for _, replacements, _, _ in results):
+        clear_webview_code_cache()
+        print("Clypra 已经是汉化状态，无需重复写入。")
+        print("已清理 WebView Code Cache。")
         return
 
     backup = make_backup(exe)
